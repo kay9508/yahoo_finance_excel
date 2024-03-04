@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -38,7 +39,7 @@ public class FinanceService {
     private String yahooFinanceApiKey;
 
     private final ObjectMapper objectMapper;
-    public void test(FinanceInfo financeInfo) {
+    public XSSFWorkbook excelDownload(FinanceInfo financeInfo) {
         String url = yahooFinanceUrl + "/v8/finance/chart/" + financeInfo.getTicker();
         Timestamp period1 = Timestamp.valueOf(financeInfo.getStartDate().atTime(0, 0, 0));
         Timestamp period2 = Timestamp.valueOf(financeInfo.getEndDate().atTime(0, 0, 0));
@@ -99,24 +100,34 @@ public class FinanceService {
             log.warn("(!주의!)첫 거래일이 입력된 일자와 다릅니다.");
         }
 
-        excelFileCreate(resultDTO);
-
+        XSSFWorkbook makedExcel = excelFileCreate(resultDTO, financeInfo.getShotTag(), financeInfo.getKoreaName());
         log.info("끝");
+        return makedExcel;
     }
 
-    private void excelFileCreate(ApiResultDTO resultDTO) {
+    private XSSFWorkbook excelFileCreate(ApiResultDTO resultDTO, String shotTag, String koreaName) {
+        shotTag = shotTag == null ? "" : shotTag;
+        koreaName = koreaName == null ? "" : koreaName;
+
         List<Double> closeList = resultDTO.getIndicators().getQuote().get(0).getClose();
         List<Integer> volumeList = resultDTO.getIndicators().getQuote().get(0).getVolume();
         List<Double> openList = resultDTO.getIndicators().getQuote().get(0).getOpen();
         List<Double> lowList = resultDTO.getIndicators().getQuote().get(0).getLow();
         List<Double> highList = resultDTO.getIndicators().getQuote().get(0).getHigh();
 
-        DecimalFormat decFormat = new DecimalFormat("###,###");
-        //엑셀 파일 생성
+        // DecimalFormat decFormat = new DecimalFormat("###,###");
+        // 엑셀 파일 생성
         XSSFWorkbook xls = new XSSFWorkbook(); // .xlsx
 
+        // 스타일
+        CellStyle cashStyle = xls.createCellStyle();
+        cashStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
+        CellStyle percentStyle = xls.createCellStyle();
+        percentStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("0.00%"));
+
         // 내림차순으로 정렬 (이거 하면 데이터 다꼬임)
-        //Collections.sort(resultDTO.getTimestamp(), Collections.reverseOrder());
+        // Collections.sort(resultDTO.getTimestamp(), Collections.reverseOrder());
 
         LinkedHashMap<String, XSSFSheet> sheetMap = new LinkedHashMap<>();
 
@@ -125,12 +136,14 @@ public class FinanceService {
         for (Integer i = totalCount - 1; i >= 0; i--) {
             LocalDate tradeDate = Instant.ofEpochSecond(timestampList.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
             String sheetName = String.valueOf(tradeDate.getMonth()).substring(0,3) + " " + String.valueOf(tradeDate.getYear()).substring(2,4);
+
+            //  시트생성
             if (sheetMap.get(sheetName) == null) {
                 XSSFSheet sheet = xls.createSheet(sheetName);
                 Row row1 = sheet.createRow(0);
                 Cell row1Cell1 = row1.createCell(0);
                 Cell row1Cell7 = row1.createCell(7);
-                row1Cell1.setCellValue("() " + resultDTO.getMeta().getSymbol());
+                row1Cell1.setCellValue("(" + shotTag + ") " + resultDTO.getMeta().getSymbol() + " (" + koreaName + ")");
                 row1Cell7.setCellValue(String.valueOf(tradeDate.getMonth()).substring(0,3) + "/" + String.valueOf(tradeDate.getYear()).substring(2,4));
                 Row row2 = sheet.createRow(1);
                 Cell row2Cell1 = row2.createCell(0);
@@ -150,46 +163,64 @@ public class FinanceService {
                 Cell row2Cell8 = row2.createCell(7);
                 row2Cell8.setCellValue("CHANGE");
 
+                for (int day = 2; day < 33; day++) {
+                    Row nowRow = sheet.createRow(day);
+                    Cell cell2 = nowRow.createCell(1);
+                    cell2.setCellValue(33 - day);
+                }
+
                 sheetMap.put(sheetName, sheet);
             }
-            XSSFSheet selectedSheet = sheetMap.get(sheetName);
-            Row nowRow = selectedSheet.createRow(35 - tradeDate.getDayOfMonth());
-            Cell nowRowCell1 = nowRow.createCell(0);
-            Cell nowRowCell2 = nowRow.createCell(1);
-            nowRowCell2.setCellValue(String.valueOf(tradeDate.getDayOfMonth()));
-
-            Cell nowRowCell3 = nowRow.createCell(2);
-            nowRowCell3.setCellValue(String.format("%.2f", openList.get(i)));
-
-            Cell nowRowCell4 = nowRow.createCell(3);
-            nowRowCell4.setCellValue(String.format("%.2f", highList.get(i)));
-
-            Cell nowRowCell5 = nowRow.createCell(4);
-            nowRowCell5.setCellValue(String.format("%.2f", lowList.get(i)));
-
-            Cell nowRowCell6 = nowRow.createCell(5);
-            nowRowCell6.setCellValue(String.format("%.2f", closeList.get(i)));
-
-            Cell nowRowCell7 = nowRow.createCell(6);
-            String volumFormat = decFormat.format(volumeList.get(i));
-            nowRowCell7.setCellValue(volumFormat);
-
-            Cell nowRowCell8 = nowRow.createCell(7);
-
-            if (i != 0) {
-                Double yesterDayClose = closeList.get(i - 1);
-                Double todayClose = closeList.get(i);
-                Double change = (todayClose - yesterDayClose) / yesterDayClose * 100;
-                String chageValue = String.format("%.2f",change) + "%";
-                nowRowCell8.setCellValue(chageValue);
-                log.info("test");
-            }
-
-            log.info("tradeDate : {}", tradeDate);
         }
 
-        CellStyle cellStyle = xls.createCellStyle();
+        for (Integer i = totalCount - 1; i >= 0; i--) {
+            LocalDate tradeDate = Instant.ofEpochSecond(timestampList.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
+            String sheetName = String.valueOf(tradeDate.getMonth()).substring(0, 3) + " " + String.valueOf(tradeDate.getYear()).substring(2, 4);
+
+            // 시트내용 채우기
+            XSSFSheet selectedSheet = sheetMap.get(sheetName);
+            Row nowRow = null;
+            for (int j = 1; j < 32; j++) {
+                if (tradeDate.getDayOfMonth() == j) {
+                    nowRow = selectedSheet.getRow(33-j);
+
+                    // 1번 항목은 다른 api에서 가져와야하는 내용
+                    Cell nowRowCell1 = nowRow.createCell(0);
+                    //Cell nowRowCell2 = nowRow.createCell(1);
+                    //nowRowCell2.setCellValue(String.valueOf(tradeDate.getDayOfMonth()));
+
+                    Cell nowRowCell3 = nowRow.createCell(2);
+                    nowRowCell3.setCellValue(Double.valueOf(String.format("%.2f", openList.get(i))));
+
+                    Cell nowRowCell4 = nowRow.createCell(3);
+                    nowRowCell4.setCellValue(Double.valueOf(String.format("%.2f", highList.get(i))));
+
+                    Cell nowRowCell5 = nowRow.createCell(4);
+                    nowRowCell5.setCellValue(Double.valueOf(String.format("%.2f", lowList.get(i))));
+
+                    Cell nowRowCell6 = nowRow.createCell(5);
+                    nowRowCell6.setCellValue(Double.valueOf(String.format("%.2f", closeList.get(i))));
+
+                    Cell nowRowCell7 = nowRow.createCell(6);
+                    nowRowCell7.setCellValue(volumeList.get(i));
+                    nowRowCell7.setCellStyle(cashStyle);
+
+                    Cell nowRowCell8 = nowRow.createCell(7);
+
+                    if (i != 0) {
+                        Double yesterDayClose = closeList.get(i - 1);
+                        Double todayClose = closeList.get(i);
+                         Double change = (todayClose - yesterDayClose) / yesterDayClose * 100;
+                        String chageValue = String.format("%.2f",change) + "%";
+                        nowRowCell8.setCellValue(chageValue);
+                    }
+                }
+            }
+
+        }
 
         log.info("excelFileCreate End");
+
+        return xls;
     }
 }

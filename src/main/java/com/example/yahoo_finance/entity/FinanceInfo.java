@@ -17,4 +17,8 @@ public class FinanceInfo {
     private LocalDate endDate;
 
     private String ticker;
+
+    private String shotTag;
+
+    private String koreaName;
 }

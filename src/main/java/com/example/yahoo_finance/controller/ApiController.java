@@ -5,11 +5,13 @@ import com.example.yahoo_finance.service.FinanceService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 
 @Slf4j
 @RestController
@@ -17,32 +19,27 @@ import java.io.IOException;
 public class ApiController {
 
     private final FinanceService financeService;
-    /*@GetMapping("/resultToExcel")
-    public ResponseEntity<TodoResponseDto.TodoList> listTodo(@Valid TodoRequestDto.ListTodo listTodoDto,
-                                                             @PageableDefault Pageable pageable) {
-        TodoResponseDto.TodoList rtnDto = todoService.list(listTodoDto, pageable);
-        return ResponseEntity
-                .ok()
-                .body(rtnDto);
-    }*/
-
     @GetMapping("/downloadExcel")
     public void downloadExcel(HttpServletResponse response,  FinanceInfo financeInfo) throws IOException {
 
-        financeService.test(financeInfo);
-        /*
-        // API 요청 처리 및 데이터 가져오기
-        List<Data> data = ...;
+        String fileName = "";
+        if (financeInfo.getTicker() == null) {
+            throw new IOException("Primary value is not Input");
+        } else {
+            if (financeInfo.getShotTag() != null && !financeInfo.getShotTag().isEmpty()) {
+                fileName += "(" + financeInfo.getShotTag() + ") ";
+            }
+            fileName += financeInfo.getTicker();
+        }
 
-        // Excel 파일 생성
-        Workbook workbook = excelDownloadService.createExcel(data);
+        XSSFWorkbook workbook = financeService.excelDownload(financeInfo);
+        response.setContentType("application/vnd.ms-excel");
+        String checkName = URLEncoder.encode(fileName, "UTF-8");
+        //response.setHeader("Content-Disposition", "attachment;filename="+ URLEncoder.encode(fileName, "UTF-8")+".xlsx");
+        //파일명은 URLEncoder로 감싸주는게 좋다! <- 감싸면 특수문자 깨져서 아래처럼 일단 사용
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + ".xlsx\"");
 
-        // 파일 다운로드 설정
-        response.setHeader("Content-Type", "application/vnd.ms-excel");
-        response.setHeader("Content-Disposition", "attachment; filename=download.xlsx");
-
-        // Excel 파일 쓰기
         workbook.write(response.getOutputStream());
-        */
+        workbook.close();
     }
 }
