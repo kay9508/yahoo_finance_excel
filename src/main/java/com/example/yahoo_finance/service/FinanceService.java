@@ -15,9 +15,12 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.sql.Timestamp;
@@ -39,12 +42,14 @@ public class FinanceService {
     private String yahooFinanceApiKey;
 
     private final ObjectMapper objectMapper;
+
+    private final WebClient webClient;
+
+
     public XSSFWorkbook excelDownload(FinanceInfo financeInfo) {
         String url = yahooFinanceUrl + "/v8/finance/chart/" + financeInfo.getTicker();
         Timestamp period1 = Timestamp.valueOf(financeInfo.getStartDate().atTime(0, 0, 0));
         Timestamp period2 = Timestamp.valueOf(financeInfo.getEndDate().atTime(0, 0, 0));
-
-        WebClient webClient = WebClient.create();
 
         LinkedMultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("formatted", "true");
@@ -79,6 +84,7 @@ public class FinanceService {
             // 예외 처리
             log.error("파이낸셜 api로 정보를 가져오던 중 에러가 발생했습니다.");
             e.printStackTrace(); // 예외 정보 출력
+            return null;
         }
 
         ApiResultDTO resultDTO = null;

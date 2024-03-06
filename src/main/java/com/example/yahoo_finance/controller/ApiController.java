@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.rmi.ServerException;
 
 @Slf4j
 @RestController
@@ -33,6 +34,9 @@ public class ApiController {
         }
 
         XSSFWorkbook workbook = financeService.excelDownload(financeInfo);
+        if (workbook == null) {
+            throw new ServerException("Excel Download Error");
+        }
         response.setContentType("application/vnd.ms-excel");
         String checkName = URLEncoder.encode(fileName, "UTF-8");
         //response.setHeader("Content-Disposition", "attachment;filename="+ URLEncoder.encode(fileName, "UTF-8")+".xlsx");
