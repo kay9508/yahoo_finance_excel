@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
 import javax.swing.*;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 
 @SpringBootApplication(
@@ -17,10 +18,38 @@ public class YahooFinanceApplication {
 
 		String url = "http://localhost:4031";
 
-        openURL(url);
+        /*openURL(url);*/
+		try {
+			/*String path = System.getProperty("user.dir");
+			String command = "cd " + path;
+			Runtime.getRuntime().exec(command);*/
+			Runtime.getRuntime().exec("cmd /c dir && start index.html");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		/*try {
+			Process process = Runtime.getRuntime().exec("cmd /c dir");
+			int exitCode = process.waitFor();
+
+			if (exitCode == 0) {
+				// 명령어 실행 성공
+				InputStream inputStream = process.getInputStream();
+				byte[] buf = new byte[1024];
+				int bytesRead;
+				while ((bytesRead = inputStream.read(buf)) != -1) {
+					System.out.write(buf, 0, bytesRead);
+				}
+			} else {
+				// 명령어 실행 실패
+				System.err.println("명령어 실행 실패: " + exitCode);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}*/
 	}
 
-    public static void openURL(String url) {
+    /*public static void openURL(String url) {
         String osName = System.getProperty("os.name");
         try {
             if (osName.startsWith("Mac OS")) {
@@ -48,6 +77,6 @@ public class YahooFinanceApplication {
         catch (Exception e) {
             JOptionPane.showMessageDialog(null, "error" + ":\n" + e.getLocalizedMessage());
         }
-    }
+    }*/
 
 }
