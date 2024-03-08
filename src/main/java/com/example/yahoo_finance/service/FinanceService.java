@@ -7,10 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
-import org.apache.poi.ss.usermodel.BuiltinFormats;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
@@ -135,18 +132,36 @@ public class FinanceService {
         // 엑셀 파일 생성
         XSSFWorkbook xls = new XSSFWorkbook(); // .xlsx
 
+        // 기본 폰트
+        CellStyle defaultFontStyle = xls.createCellStyle();
+        Font defaultFont = xls.createFont();
+        defaultFont.setFontName("Arial");
+        defaultFont.setFontHeightInPoints((short) 15);
+        defaultFontStyle.setFont(defaultFont);
+
+        CellStyle boldFontStyle = xls.createCellStyle();
+        Font boldFont = xls.createFont();
+        boldFont.setFontName("Arial");
+        boldFont.setBold(true);
+        boldFont.setFontHeightInPoints((short) 15);
+        boldFontStyle.setFont(boldFont);
+
         // 스타일
         CellStyle cashStyle = xls.createCellStyle();
         cashStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+        cashStyle.setFont(defaultFont);
 
         CellStyle percentStyle = xls.createCellStyle();
         percentStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("0.00%"));
+        percentStyle.setFont(defaultFont);
 
         CellStyle cashDotTwoStyle = xls.createCellStyle();
         cashDotTwoStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0.00"));
+        cashDotTwoStyle.setFont(defaultFont);
 
         CellStyle dotTwoStyle = xls.createCellStyle();
         dotTwoStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("0.00"));
+        dotTwoStyle.setFont(defaultFont);
 
         // 내림차순으로 정렬 (이거 하면 데이터 다꼬임)
         // Collections.sort(resultDTO.getTimestamp(), Collections.reverseOrder());
@@ -166,29 +181,40 @@ public class FinanceService {
                 Cell row1Cell1 = row1.createCell(0);
                 Cell row1Cell7 = row1.createCell(7);
                 row1Cell1.setCellValue("(" + shotTag + ") " + resultDTO.getMeta().getSymbol() + " (" + koreaName + ")");
+                row1Cell1.setCellStyle(boldFontStyle);
                 row1Cell7.setCellValue(String.valueOf(tradeDate.getMonth()).substring(0,3) + "/" + String.valueOf(tradeDate.getYear()).substring(2,4));
+                row1Cell7.setCellStyle(boldFontStyle);
                 Row row2 = sheet.createRow(1);
                 Cell row2Cell1 = row2.createCell(0);
                 row2Cell1.setCellValue("NBI");
+                row2Cell1.setCellStyle(boldFontStyle);
                 Cell row2Cell2 = row2.createCell(1);
                 row2Cell2.setCellValue(tradeDate.getMonth().toString().substring(0,3));
+                row2Cell2.setCellStyle(boldFontStyle);
                 Cell row2Cell3 = row2.createCell(2);
                 row2Cell3.setCellValue("OPEN");
+                row2Cell3.setCellStyle(boldFontStyle);
                 Cell row2Cell4 = row2.createCell(3);
                 row2Cell4.setCellValue("HIGH");
+                row2Cell4.setCellStyle(boldFontStyle);
                 Cell row2Cell5 = row2.createCell(4);
                 row2Cell5.setCellValue("LOW");
+                row2Cell5.setCellStyle(boldFontStyle);
                 Cell row2Cell6 = row2.createCell(5);
                 row2Cell6.setCellValue("CLOSE");
+                row2Cell6.setCellStyle(boldFontStyle);
                 Cell row2Cell7 = row2.createCell(6);
                 row2Cell7.setCellValue("VOLUME");
+                row2Cell7.setCellStyle(boldFontStyle);
                 Cell row2Cell8 = row2.createCell(7);
                 row2Cell8.setCellValue("CHANGE");
+                row2Cell8.setCellStyle(boldFontStyle);
 
                 for (int day = 2; day < 33; day++) {
                     Row nowRow = sheet.createRow(day);
                     Cell cell2 = nowRow.createCell(1);
                     cell2.setCellValue(33 - day);
+                    cell2.setCellStyle(defaultFontStyle);
                 }
 
                 sheetMap.put(sheetName, sheet);
@@ -246,7 +272,16 @@ public class FinanceService {
                     }
                 }
             }
+        }
 
+        for (String s : sheetMap.keySet()) {
+            XSSFSheet sheet = sheetMap.get(s);
+            // 모든 셀에 스타일 적용
+            for (int i = 0; i < sheet.getLastRowNum(); i++) {
+                for (int j = 0; j < sheet.getRow(i).getLastCellNum(); j++) {
+                    sheet.getRow(i).getCell(j).setCellStyle(defaultFontStyle);
+                }
+            }
         }
 
         log.info("excelFileCreate End");
