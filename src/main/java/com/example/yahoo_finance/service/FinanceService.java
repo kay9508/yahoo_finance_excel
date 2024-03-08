@@ -179,11 +179,11 @@ public class FinanceService {
                 XSSFSheet sheet = xls.createSheet(sheetName);
                 Row row1 = sheet.createRow(0);
                 Cell row1Cell1 = row1.createCell(0);
-                Cell row1Cell7 = row1.createCell(7);
+                Cell row1Cell8 = row1.createCell(7);
                 row1Cell1.setCellValue("(" + shotTag + ") " + resultDTO.getMeta().getSymbol() + " (" + koreaName + ")");
                 row1Cell1.setCellStyle(boldFontStyle);
-                row1Cell7.setCellValue(String.valueOf(tradeDate.getMonth()).substring(0,3) + "/" + String.valueOf(tradeDate.getYear()).substring(2,4));
-                row1Cell7.setCellStyle(boldFontStyle);
+                row1Cell8.setCellValue(String.valueOf(tradeDate.getMonth()).substring(0,3) + "/" + String.valueOf(tradeDate.getYear()).substring(2,4));
+                row1Cell8.setCellStyle(boldFontStyle);
                 Row row2 = sheet.createRow(1);
                 Cell row2Cell1 = row2.createCell(0);
                 row2Cell1.setCellValue("NBI");
@@ -274,15 +274,17 @@ public class FinanceService {
             }
         }
 
-        for (String s : sheetMap.keySet()) {
+        /*for (String s : sheetMap.keySet()) {
             XSSFSheet sheet = sheetMap.get(s);
             // 모든 셀에 스타일 적용
             for (int i = 0; i < sheet.getLastRowNum(); i++) {
                 for (int j = 0; j < sheet.getRow(i).getLastCellNum(); j++) {
-                    sheet.getRow(i).getCell(j).setCellStyle(defaultFontStyle);
+                    if (sheet.getRow(i).getCell(j) != null) {
+                        sheet.getRow(i).getCell(j).setCellStyle(defaultFontStyle);
+                    }
                 }
             }
-        }
+        }*/
 
         log.info("excelFileCreate End");
 
