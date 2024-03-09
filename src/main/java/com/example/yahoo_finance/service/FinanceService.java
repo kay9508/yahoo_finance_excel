@@ -7,10 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
-import org.apache.poi.ss.usermodel.BuiltinFormats;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.hssf.usermodel.HSSFPrintSetup;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFPrintSetup;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
@@ -162,6 +161,15 @@ public class FinanceService {
             //  시트생성
             if (sheetMap.get(sheetName) == null) {
                 XSSFSheet sheet = xls.createSheet(sheetName);
+                sheet.setMargin(PageMargin.LEFT, 1.3);
+                sheet.setMargin(PageMargin.RIGHT, 1.3);
+                //sheet.setZoom(100);
+
+                // HSSFPrintSetup 또는 XSSFPrintSetup 객체 생성
+                XSSFPrintSetup printSetup = sheet.getPrintSetup(); // 또는 XSSFPrintSetup();
+				// 인쇄 크기 설정 (letter 크기)
+                printSetup.setPaperSize(XSSFPrintSetup.LETTER_PAPERSIZE);
+
                 Row row1 = sheet.createRow(0);
                 Cell row1Cell1 = row1.createCell(0);
                 Cell row1Cell7 = row1.createCell(7);
