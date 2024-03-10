@@ -70,7 +70,6 @@ public class FinanceService {
             LinkedHashMap resultMap = (LinkedHashMap) resultList.get(0);
 
             nbiResultDTO = objectMapper.convertValue(resultMap, ApiResultDTO.class);
-            log.info("resultDTO : {}", nbiResultDTO);
         } catch (Exception e) {
             log.error("DTO변환 도중 에러가 발생했습니다.");
             e.printStackTrace();
@@ -107,7 +106,6 @@ public class FinanceService {
             LinkedHashMap resultMap = (LinkedHashMap) resultList.get(0);
 
             dayDataResultDTO = objectMapper.convertValue(resultMap, ApiResultDTO.class);
-            log.info("resultDTO : {}", dayDataResultDTO);
         } catch (Exception e) {
             log.error("DTO변환 도중 에러가 발생했습니다.");
             e.printStackTrace();
@@ -152,6 +150,7 @@ public class FinanceService {
         row1Cell1Font.setBold(true);
         row1Cell1Font.setFontHeightInPoints((short) 17);
         row1Cell1Style.setFont(row1Cell1Font);
+        row1Cell1Style.setAlignment(HorizontalAlignment.LEFT);
 
         // H-1에 사용될 스타일
         CellStyle row1Cell8Style = xls.createCellStyle();
@@ -160,6 +159,7 @@ public class FinanceService {
         row1Cell8Font.setBold(true);
         row1Cell8Font.setFontHeightInPoints((short) 14);
         row1Cell8Style.setFont(row1Cell8Font);
+        row1Cell8Style.setAlignment(HorizontalAlignment.RIGHT);
 
         // A-2에 사용될 스타일
         CellStyle row2Cell1Style = xls.createCellStyle();
@@ -172,6 +172,8 @@ public class FinanceService {
         row2Cell1Style.setBorderLeft(BorderStyle.THIN);
         row2Cell1Style.setBorderRight(BorderStyle.DOUBLE);
         row2Cell1Style.setBorderBottom(BorderStyle.DOUBLE);
+        row2Cell1Style.setAlignment(HorizontalAlignment.CENTER);
+        row2Cell1Style.setVerticalAlignment(VerticalAlignment.CENTER);
 
         // row2에 사용될 스타일
         CellStyle row2Cell2to8Style = xls.createCellStyle();
@@ -184,6 +186,8 @@ public class FinanceService {
         row2Cell2to8Style.setBorderLeft(BorderStyle.THIN);
         row2Cell2to8Style.setBorderRight(BorderStyle.THIN);
         row2Cell2to8Style.setBorderBottom(BorderStyle.DOUBLE);
+        row2Cell2to8Style.setAlignment(HorizontalAlignment.CENTER);
+        row2Cell2to8Style.setVerticalAlignment(VerticalAlignment.CENTER);
 
         // VOLUME에 사용될 스타일
         CellStyle cashStyle = xls.createCellStyle();
@@ -191,6 +195,7 @@ public class FinanceService {
         cashStyle.setFont(defaultFont);
         cashStyle.setBorderRight(BorderStyle.THIN);
         cashStyle.setBorderBottom(BorderStyle.THIN);
+        cashStyle.setAlignment(HorizontalAlignment.RIGHT);
 
         // CHANGE에 사용될 스타일
         CellStyle percentStyle = xls.createCellStyle();
@@ -198,6 +203,7 @@ public class FinanceService {
         percentStyle.setFont(defaultFont);
         percentStyle.setBorderRight(BorderStyle.THIN);
         percentStyle.setBorderBottom(BorderStyle.THIN);
+        percentStyle.setAlignment(HorizontalAlignment.RIGHT);
 
         // NBI에 사용될 스타일
         CellStyle cashDotTwoStyle = xls.createCellStyle();
@@ -205,6 +211,7 @@ public class FinanceService {
         cashDotTwoStyle.setFont(defaultFont);
         cashDotTwoStyle.setBorderLeft(BorderStyle.THIN);
         cashDotTwoStyle.setBorderBottom(BorderStyle.THIN);
+        cashDotTwoStyle.setAlignment(HorizontalAlignment.RIGHT);
 
         // 나머지 Data에 사용될 스타일
         CellStyle dotTwoStyle = xls.createCellStyle();
@@ -212,6 +219,7 @@ public class FinanceService {
         dotTwoStyle.setFont(defaultFont);
         dotTwoStyle.setBorderRight(BorderStyle.THIN);
         dotTwoStyle.setBorderBottom(BorderStyle.THIN);
+        dotTwoStyle.setAlignment(HorizontalAlignment.RIGHT);
 
         // 기본 스타일
         CellStyle defaultStyle = xls.createCellStyle();
@@ -221,6 +229,7 @@ public class FinanceService {
         defaultStyle.setBorderLeft(BorderStyle.THIN);
         defaultStyle.setBorderRight(BorderStyle.THIN);
         defaultStyle.setBorderBottom(BorderStyle.THIN);
+        defaultStyle.setAlignment(HorizontalAlignment.RIGHT);
 
         // 일자에 사용될 스타일
         CellStyle dayStyle = xls.createCellStyle();
@@ -324,17 +333,24 @@ public class FinanceService {
 				1550 -> 5.29
 				1600 -> 5.57
 				1650 -> 5.71
+				1675 -> 5.86
 				2560 -> 9.29
+				2750 -> 10
+				2755 -> 10
 				3328 -> 12.29
 				3340 -> 12.29
-				2755 -> 10
-				2750 -> 10
-				3575 -> 13.29
-				3525 -> 13
 				3500 -> 13
-				1675 -> 5.86
-				4590 -> 17.29
+				3525 -> 13
+				3575 -> 13.29
+				3725 -> 13.86
+				3750 -> 14
+				3775 -> 14
+				3800 -> 14.14
 				4540 -> 17
+				4620 -> 17.29
+				4720 -> 17.71
+				4770 -> 17.86
+				4830 -> 18.14
                 */
 
                 sheet.setColumnWidth(0, 3525); // 13
@@ -371,19 +387,19 @@ public class FinanceService {
                     //nowRowCell2.setCellValue(String.valueOf(tradeDate.getDayOfMonth()));
 
                     Cell nowRowCell3 = nowRow.getCell(2);
-                    nowRowCell3.setCellValue(Double.valueOf(String.format("%.2f", openList.get(i))));
+                    nowRowCell3.setCellValue(openList.get(i));
                     nowRowCell3.setCellStyle(dotTwoStyle);
 
                     Cell nowRowCell4 = nowRow.getCell(3);
-                    nowRowCell4.setCellValue(Double.valueOf(String.format("%.2f", highList.get(i))));
+                    nowRowCell4.setCellValue(highList.get(i));
                     nowRowCell4.setCellStyle(dotTwoStyle);
 
                     Cell nowRowCell5 = nowRow.getCell(4);
-                    nowRowCell5.setCellValue(Double.valueOf(String.format("%.2f", lowList.get(i))));
+                    nowRowCell5.setCellValue(lowList.get(i));
                     nowRowCell5.setCellStyle(dotTwoStyle);
 
                     Cell nowRowCell6 = nowRow.getCell(5);
-                    nowRowCell6.setCellValue(Double.valueOf(String.format("%.2f", closeList.get(i))));
+                    nowRowCell6.setCellValue(closeList.get(i));
                     nowRowCell6.setCellStyle(dotTwoStyle);
 
                     Cell nowRowCell7 = nowRow.getCell(6);
@@ -404,7 +420,7 @@ public class FinanceService {
 
         }
 
-        log.info("excelFileCreate End");
+        log.info("일별데이서 생성 완료");
 
         return xls;
     }
@@ -436,7 +452,6 @@ public class FinanceService {
                 LinkedHashMap resultMap = (LinkedHashMap) resultList.get(0);
 
                 resultDTO = objectMapper.convertValue(resultMap, ApiResultDTO.class);
-                log.info("*** getPeriods - resultDTO : {}", resultDTO);
             } catch (Exception e) {
                 log.error("*** getPeriods - DTO변환 도중 에러가 발생했습니다.");
                 e.printStackTrace();
@@ -487,6 +502,35 @@ public class FinanceService {
 
     private XSSFWorkbook setMonthData(XSSFWorkbook makedExcel, String monthDataUrl, String companyFullName, String ticker) {
         XSSFWorkbook finalExcel = makedExcel;
+
+        Font defaultFont = finalExcel.createFont();
+        defaultFont.setFontName("Arial");
+        defaultFont.setFontHeightInPoints((short) 15);
+
+        // 기본 스타일
+        CellStyle defaultFontStyle = finalExcel.createCellStyle();
+        defaultFontStyle.setFont(defaultFont);
+        defaultFontStyle.setAlignment(HorizontalAlignment.RIGHT);
+
+        // A-1에 사용될 스타일
+        CellStyle row1Cell1Style = finalExcel.createCellStyle();
+        Font row1Cell1Font = finalExcel.createFont();
+        row1Cell1Font.setFontName("Arial");
+        row1Cell1Font.setBold(true);
+        row1Cell1Font.setFontHeightInPoints((short) 22);
+        row1Cell1Style.setFont(row1Cell1Font);
+        row1Cell1Style.setAlignment(HorizontalAlignment.LEFT);
+
+        // row3에 사용될 스타일
+        CellStyle subTitleStyle = finalExcel.createCellStyle();
+        subTitleStyle.setFont(defaultFont);
+        subTitleStyle.setAlignment(HorizontalAlignment.RIGHT);
+
+        // 나머지 Data에 사용될 스타일
+        CellStyle dotTwoStyle = finalExcel.createCellStyle();
+        dotTwoStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("0.00"));
+        dotTwoStyle.setFont(defaultFont);
+        dotTwoStyle.setAlignment(HorizontalAlignment.RIGHT);
 
         String monthDataResponse = "";
         try {
@@ -562,29 +606,72 @@ public class FinanceService {
                 printSetup.setScale((short) 100);
 
                 Row row1 = sheet.createRow(0);
+                row1.setHeightInPoints((short) 37);
                 Cell row1Cell1 = row1.createCell(0);
                 row1Cell1.setCellValue(ticker + "/ " + companyFullName);
+                row1Cell1.setCellStyle(row1Cell1Style);
 
                 Row row2 = sheet.createRow(1);
+                row2.setHeightInPoints((short) 22);
 
                 Row row3 = sheet.createRow(2);
                 Cell row3Cell1 = row3.createCell(0);
                 row3Cell1.setCellValue("Date");
+                row3Cell1.setCellStyle(subTitleStyle);
 
                 Cell row3Cell2 = row3.createCell(1);
                 row3Cell2.setCellValue("Open");
+                row3Cell2.setCellStyle(subTitleStyle);
 
                 Cell row3Cell3 = row3.createCell(2);
                 row3Cell3.setCellValue("High");
+                row3Cell3.setCellStyle(subTitleStyle);
 
                 Cell row3Cell4 = row3.createCell(3);
                 row3Cell4.setCellValue("Low");
+                row3Cell4.setCellStyle(subTitleStyle);
 
                 Cell row3Cell5 = row3.createCell(4);
                 row3Cell5.setCellValue("Close");
+                row3Cell5.setCellStyle(subTitleStyle);
 
                 Cell row3Cell6 = row3.createCell(5);
                 row3Cell6.setCellValue("Avg Vol");
+                row3Cell6.setCellStyle(subTitleStyle);
+
+                /*
+                시트 설정값
+                1500 -> 5.14
+				1550 -> 5.29
+				1600 -> 5.57
+				1650 -> 5.71
+				1675 -> 5.86
+				2560 -> 9.29
+				2750 -> 10
+				2755 -> 10
+				3328 -> 12.29
+				3340 -> 12.29
+				3500 -> 13
+				3525 -> 13
+				3575 -> 13.29
+				3725 -> 13.86
+				3750 -> 14
+				3775 -> 14
+				3800 -> 14.14
+				4540 -> 17
+				4620 -> 17.29
+				4720 -> 17.71
+				4770 -> 17.86
+				4830 -> 18.14
+				4880 -> 18.29
+                */
+
+                sheet.setColumnWidth(0, 4660); // 17.43
+                sheet.setColumnWidth(1, 3750); // 14
+                sheet.setColumnWidth(2, 3750); // 14
+                sheet.setColumnWidth(3, 3750); // 14
+                sheet.setColumnWidth(4, 3750); // 14
+                sheet.setColumnWidth(5, 4880); // 18.29
 
                 sheetMap.put(sheetName , sheet);
             }
@@ -601,28 +688,33 @@ public class FinanceService {
                     XSSFSheet loadSheet = sheetMap.get(sheetName);
 
                     Row nowRow = loadSheet.createRow(loadSheet.getLastRowNum() + 1);
+                    nowRow.setHeightInPoints((short) 22);
                     Cell cell1 = nowRow.createCell(0);
                     cell1.setCellValue(tradeDate.format(DateTimeFormatter.ISO_DATE));
+                    cell1.setCellStyle(defaultFontStyle);// TODO 일자 출력 format 미설정
 
                     Cell cell2 = nowRow.createCell(1);
                     cell2.setCellValue(openList.get(i));
+                    cell2.setCellStyle(dotTwoStyle);
 
                     Cell cell3 = nowRow.createCell(2);
                     cell3.setCellValue(highList.get(i));
+                    cell3.setCellStyle(dotTwoStyle);
 
                     Cell cell4 = nowRow.createCell(3);
                     cell4.setCellValue(lowList.get(i));
+                    cell4.setCellStyle(dotTwoStyle);
 
                     Cell cell5 = nowRow.createCell(4);
                     cell5.setCellValue(closeList.get(i));
+                    cell5.setCellStyle(dotTwoStyle);
 
                     Cell cell6 = nowRow.createCell(5);
                 }
             }
         }
 
-        //monthDataResultDTO
-        log.info("test");
+        log.info("월별데이터 생성 완료");
 
         return finalExcel;
     }
