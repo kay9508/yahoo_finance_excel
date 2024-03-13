@@ -10,5 +10,6 @@ import java.util.List;
 public class ApiResultDTO {
     private MetaDTO meta;
     private List<Integer> timestamp;
+    private EventDTO events;
     private IndicatorsDTO indicators;
 }

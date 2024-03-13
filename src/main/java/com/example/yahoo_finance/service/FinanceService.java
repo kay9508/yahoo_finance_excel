@@ -1,8 +1,6 @@
 package com.example.yahoo_finance.service;
 
-import com.example.yahoo_finance.entity.ApiResultDTO;
-import com.example.yahoo_finance.entity.FinanceInfo;
-import com.example.yahoo_finance.entity.PeriodDTO;
+import com.example.yahoo_finance.entity.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +20,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -131,6 +131,38 @@ public class FinanceService {
         List<Double> openList = resultDTO.getIndicators().getQuote().get(0).getOpen();
         List<Double> lowList = resultDTO.getIndicators().getQuote().get(0).getLow();
         List<Double> highList = resultDTO.getIndicators().getQuote().get(0).getHigh();
+
+        LinkedHashMap<LocalDate, DividendsDTO> dividendsMap = null;
+        if (resultDTO.getEvents() != null) {
+            dividendsMap = new LinkedHashMap<>();
+            for (String s : resultDTO.getEvents().getDividends().keySet()) {
+                LocalDate date = Instant.ofEpochSecond(resultDTO.getEvents().getDividends().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
+                dividendsMap.put(date, resultDTO.getEvents().getDividends().get(s));
+            }
+        }
+
+        // Iterator 객체 생성
+        Iterator<Map.Entry<LocalDate, DividendsDTO>> dividendsIterator = dividendsMap.entrySet().iterator();
+        while (dividendsIterator.hasNext()) {
+            Map.Entry<LocalDate, DividendsDTO> entry = dividendsIterator.next();
+            System.out.println(entry.getKey() + " : " + entry.getValue());
+        }
+
+        LinkedHashMap<LocalDate, SplitsDTO> splitsMap = null;
+        if (resultDTO.getEvents() != null) {
+            splitsMap = new LinkedHashMap<>();
+            for (String s : resultDTO.getEvents().getSplits().keySet()) {
+                LocalDate date = Instant.ofEpochSecond(resultDTO.getEvents().getSplits().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
+                splitsMap.put(date, resultDTO.getEvents().getSplits().get(s));
+            }
+        }
+
+        // Iterator 객체 생성 (Map을 역으로 돌려야할때)
+        Iterator<Map.Entry<LocalDate, SplitsDTO>> splitsIterator = splitsMap.entrySet().iterator();
+        while (splitsIterator.hasNext()) {
+            Map.Entry<LocalDate, SplitsDTO> entry = splitsIterator.next();
+            System.out.println(entry.getKey() + " : " + entry.getValue().getSplitRatio());
+        }
 
         // 엑셀 파일 생성
         XSSFWorkbook xls = new XSSFWorkbook(); // .xlsx
@@ -487,7 +519,7 @@ public class FinanceService {
 
         map.add("period1", periodSetting.getStartPeriodString());
         map.add("period2", periodSetting.getEndPeriodString());
-//        map.add("events", "capitalGain%7Cdiv%7Csplit");
+        map.add("events", "capitalGain%7Cdiv%7Csplit");
         map.add("useYfid", "true");
 //        map.add("corsDomain", "finance.yahoo.com");
 
