@@ -358,6 +358,23 @@ public class FinanceService {
                         }
                     }
                 }
+                //TODO 여기부분 작업중
+                for (LocalDate divideDate : dividendsMap.keySet()) {
+                    if (tradeDate.getYear() == divideDate.getYear() && tradeDate.getMonth() == divideDate.getMonth()) {
+                        Integer allRow = sheet.getPhysicalNumberOfRows();
+                        for (int rownum = 2; rownum < allRow; rownum++) {
+                            Double test1 = 30.0;
+                            Integer test = 30;
+                            if (test.equals(test1)) {
+                                System.out.println("test");
+                            }
+                            Integer cellDate = Integer.valueOf(String.valueOf(sheet.getRow(rownum).getCell(1).getNumericCellValue()));
+                            if (cellDate.equals(divideDate.getDayOfMonth())) {
+                                sheet.createRow(rownum); //이렇게 했을때 row가 하위에 추가되는지 확인
+                            }
+                        }
+                    }
+                }
 
                 /*
                 시트 설정값
