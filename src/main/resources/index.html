@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!--<th:block th:include="fragments/header"></th:block>-->
+    <script src="https://code.jquery.com/jquery-3.4.1.js"
+            integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="
+            crossorigin="anonymous">
+    </script>
+    <script type="text/javascript">/* th:inline="javascript"*/
+
+    $(function () {
+        $("#excelDownBtn").click(function () {
+           alert('test');
+        });
+    });
+    </script>
+</head>
+<body oncontextmenu='return false' onselectstart='return false' ondragstart='return false'>
+<div id="wrap" class="main">
+
+	<label>Ticker</label>
+    <input type="text" id="ticker" name="ticker"/>
+	<button id="excelDownBtn" name="excelDownBtn">엑셀 다운로드</button>
+</div>
+</body>
+</html>
