@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import javax.swing.*;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.util.Locale;
 
 @SpringBootApplication(
 		scanBasePackages = "com.example.yahoo_finance",
@@ -14,6 +15,7 @@ import java.lang.reflect.Method;
 		)
 public class YahooFinanceApplication {
 	public static void main(String[] args) {
+		Locale.setDefault(Locale.US);
 		SpringApplication.run(YahooFinanceApplication.class, args);
 
 		String url = "http://localhost:4031";

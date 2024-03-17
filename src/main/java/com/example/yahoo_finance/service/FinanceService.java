@@ -6,24 +6,23 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFPrintSetup;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.*;
 import org.json.simple.JSONObject;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTPrintOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.sql.Date;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -133,7 +132,7 @@ public class FinanceService {
         List<Double> highList = resultDTO.getIndicators().getQuote().get(0).getHigh();
 
         LinkedHashMap<LocalDate, DividendsDTO> dividendsMap = null;
-        if (resultDTO.getEvents() != null) {
+        if (resultDTO.getEvents() != null && resultDTO.getEvents().getDividends() != null) {
             dividendsMap = new LinkedHashMap<>();
             for (String s : resultDTO.getEvents().getDividends().keySet()) {
                 LocalDate date = Instant.ofEpochSecond(resultDTO.getEvents().getDividends().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
@@ -141,27 +140,13 @@ public class FinanceService {
             }
         }
 
-        // Iterator 객체 생성
-        Iterator<Map.Entry<LocalDate, DividendsDTO>> dividendsIterator = dividendsMap.entrySet().iterator();
-        while (dividendsIterator.hasNext()) {
-            Map.Entry<LocalDate, DividendsDTO> entry = dividendsIterator.next();
-//            System.out.println(entry.getKey() + " : " + entry.getValue());
-        }
-
         LinkedHashMap<LocalDate, SplitsDTO> splitsMap = null;
-        if (resultDTO.getEvents() != null) {
+        if (resultDTO.getEvents() != null && resultDTO.getEvents().getSplits() != null) {
             splitsMap = new LinkedHashMap<>();
             for (String s : resultDTO.getEvents().getSplits().keySet()) {
                 LocalDate date = Instant.ofEpochSecond(resultDTO.getEvents().getSplits().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
                 splitsMap.put(date, resultDTO.getEvents().getSplits().get(s));
             }
-        }
-
-        // Iterator 객체 생성 (Map을 역으로 돌려야할때)
-        Iterator<Map.Entry<LocalDate, SplitsDTO>> splitsIterator = splitsMap.entrySet().iterator();
-        while (splitsIterator.hasNext()) {
-            Map.Entry<LocalDate, SplitsDTO> entry = splitsIterator.next();
-//            System.out.println(entry.getKey() + " : " + entry.getValue().getSplitRatio());
         }
 
         // 엑셀 파일 생성
@@ -263,6 +248,27 @@ public class FinanceService {
         defaultStyle.setBorderBottom(BorderStyle.THIN);
         defaultStyle.setAlignment(HorizontalAlignment.RIGHT);
 
+        // 분할 배당 data부분에 사용할 스타일
+        CellStyle dividendAndSplitDateStyle = xls.createCellStyle();
+        dividendAndSplitDateStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("0.00"));
+        dividendAndSplitDateStyle.setFont(defaultFont);
+        dividendAndSplitDateStyle.setBorderTop(BorderStyle.THIN);
+        dividendAndSplitDateStyle.setBorderLeft(BorderStyle.THIN);
+        dividendAndSplitDateStyle.setBorderRight(BorderStyle.THIN);
+        dividendAndSplitDateStyle.setBorderBottom(BorderStyle.THIN);
+        dividendAndSplitDateStyle.setAlignment(HorizontalAlignment.CENTER);
+        dividendAndSplitDateStyle.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+        dividendAndSplitDateStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // 분할 배당 일자에 사용될 스타일
+        CellStyle dividendAndSplitDayStyle = xls.createCellStyle();
+        dividendAndSplitDayStyle.setFont(defaultFont);
+        dividendAndSplitDayStyle.setBorderLeft(BorderStyle.DOUBLE);
+        dividendAndSplitDayStyle.setBorderRight(BorderStyle.THIN);
+        dividendAndSplitDayStyle.setBorderBottom(BorderStyle.THIN);
+        dividendAndSplitDayStyle.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+        dividendAndSplitDayStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
         // 일자에 사용될 스타일
         CellStyle dayStyle = xls.createCellStyle();
         dayStyle.setFont(defaultFont);
@@ -273,6 +279,7 @@ public class FinanceService {
         // 내림차순으로 정렬 (이거 하면 데이터 다꼬임)
         // Collections.sort(resultDTO.getTimestamp(), Collections.reverseOrder());
 
+        LinkedHashMap<String, List<RowDataDTO>> sheetData = new LinkedHashMap<>();
         LinkedHashMap<String, XSSFSheet> sheetMap = new LinkedHashMap<>();
 
         List<Integer> timestampList = resultDTO.getTimestamp();
@@ -289,6 +296,8 @@ public class FinanceService {
                 sheet.setMargin(PageMargin.RIGHT, Double.valueOf("0.5")); // 여백 오른쪽1.3
                 sheet.setMargin(PageMargin.BOTTOM, Double.valueOf("0.3")); // 여백 아래쪽0.8
                 sheet.setHorizontallyCenter(true); // 페이지 가운데 맞춤
+
+                sheet.setDefaultRowHeight((short) 420);
                 // sheet.setZoom(100);
 
                 // HSSFPrintSetup 또는 XSSFPrintSetup 객체 생성
@@ -344,22 +353,6 @@ public class FinanceService {
                 row2Cell8.setCellValue("CHANGE");
                 row2Cell8.setCellStyle(row2Cell2to8Style);
 
-                //TODO 이거 이러면 답도 없을거 같고 시트를 먼저 생성한 다음에 정리된 시트 네임으로 정리된 linkedHashMap으로 (일별데이터 분할,배당 데이터 있는) 시트 채워넣는 방식으로 해야할듯
-                for (int day = 2; day < 33; day++) {
-                    Row nowRow = sheet.createRow(day);
-                    // 행 높이 설정
-                    nowRow.setHeightInPoints((short) 21);
-                    Cell cell2 = nowRow.createCell(1);
-                    cell2.setCellValue(33 - day);
-                    cell2.setCellStyle(dayStyle);
-                    for (int colum = 0; colum < 8; colum++) {
-                        if (colum != 1) {
-                            Cell nowCell = nowRow.createCell(colum);
-                            nowCell.setCellStyle(defaultStyle);
-                        }
-                    }
-                }
-
                 /*
                 시트 설정값
                 1500 -> 5.14
@@ -397,57 +390,178 @@ public class FinanceService {
 
                 sheetMap.put(sheetName, sheet);
             }
+
+            List<RowDataDTO> rowDataList = new ArrayList<>();
+            if (sheetData.get(sheetName) != null) {
+                rowDataList = sheetData.get(sheetName);
+            }
+            RowDataDTO rowData = new RowDataDTO();
+            rowData.setTradeDate(tradeDate);
+
+            rowData.setNbi(nbiMap.get(tradeDate));
+            rowData.setClose(closeList.get(i));
+            rowData.setVolume(volumeList.get(i));
+            rowData.setOpen(openList.get(i));
+            rowData.setLow(lowList.get(i));
+            rowData.setHigh(highList.get(i));
+            if (i != 0) {
+                Double yesterDayClose = closeList.get(i - 1);
+                Double todayClose = closeList.get(i);
+                Double change = (todayClose - yesterDayClose) / yesterDayClose;
+                rowData.setChange(change);
+            }
+
+            rowDataList.add(rowData);
+
+            sheetData.put(sheetName, rowDataList);
         }
 
-        //시트 채우기
-        for (Integer i = totalCount - 1; i >= 0; i--) {
-            LocalDate tradeDate = Instant.ofEpochSecond(timestampList.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
-            String sheetName = String.valueOf(tradeDate.getMonth()).substring(0, 3) + " " + String.valueOf(tradeDate.getYear()).substring(2, 4);
-
+        for (String sheetName : sheetMap.keySet()) {
             XSSFSheet selectedSheet = sheetMap.get(sheetName);
-            Row nowRow = null;
-            for (int j = 1; j < 32; j++) {
-                if (tradeDate.getDayOfMonth() == j) {
-                    nowRow = selectedSheet.getRow(33-j);
-
-                    // nbi
-                    Cell nowRowCell1 = nowRow.getCell(0);
-                    if (nbiMap.get(tradeDate) != null) {
-                        nowRowCell1.setCellValue(nbiMap.get(tradeDate));
-                        nowRowCell1.setCellStyle(cashDotTwoStyle);
+            Integer month = getMonthOfAbbreviation(selectedSheet.getSheetName().substring(0,3));
+            Integer year = 2000 + Integer.valueOf(selectedSheet.getSheetName().substring(4,6));
+            int additionalRowStart = 2;
+            List<RowDataDTO> rowDataList = sheetData.get(sheetName);
+            for(int day = 31; day > 0; day--) {
+                LocalDate targetDate = null;
+                try {
+                    targetDate = LocalDate.of(year, month, day);
+                } catch (Exception e) {
+                    Row nowRow = selectedSheet.createRow(additionalRowStart);
+                    nowRow.setHeightInPoints((short) 21);
+                    additionalRowStart = additionalRowStart + 1;
+                    for (int cell = 0; cell < 8; cell++) {
+                        Cell nowCell = nowRow.createCell(cell);
+                        if (cell == 1) {
+                            nowCell.setCellValue(day);
+                            nowCell.setCellStyle(dayStyle);
+                        } else {
+                            nowCell.setCellStyle(defaultStyle);
+                        }
                     }
-                    //Cell nowRowCell2 = nowRow.getCell(1);
-                    //nowRowCell2.setCellValue(String.valueOf(tradeDate.getDayOfMonth()));
+                    continue;
+                }
+                Boolean exist = false;
+                for (RowDataDTO rowData : rowDataList) {
+                    if (rowData.getTradeDate().equals(targetDate)) {
+                        Row nowRow = selectedSheet.createRow(additionalRowStart);
+                        nowRow.setHeightInPoints((short) 21);
+                        additionalRowStart = additionalRowStart + 1;
+                        for (int cell = 0; cell < 8; cell++) {
+                            Cell nowCell = nowRow.createCell(cell);
+                            switch (cell) {
+                                case 0 :
+                                    nowCell.setCellValue(rowData.getNbi());
+                                    nowCell.setCellStyle(cashDotTwoStyle);
+                                    break;
+                                case 1 :
+                                    nowCell.setCellValue(day);
+                                    nowCell.setCellStyle(dayStyle);
+                                    break;
+                                case 2 :
+                                    nowCell.setCellValue(rowData.getOpen());
+                                    nowCell.setCellStyle(dotTwoStyle);
+                                    break;
+                                case 3 :
+                                    nowCell.setCellValue(rowData.getHigh());
+                                    nowCell.setCellStyle(dotTwoStyle);
+                                    break;
+                                case 4 :
+                                    nowCell.setCellValue(rowData.getLow());
+                                    nowCell.setCellStyle(dotTwoStyle);
+                                    break;
+                                case 5 :
+                                    nowCell.setCellValue(rowData.getClose());
+                                    nowCell.setCellStyle(dotTwoStyle);
+                                    break;
+                                case 6 :
+                                    nowCell.setCellValue(rowData.getVolume());
+                                    nowCell.setCellStyle(cashStyle);
+                                    break;
+                                case 7 :
+                                    if (rowData.getChange() != null) {
+                                        nowCell.setCellValue(rowData.getChange());
+                                        nowCell.setCellStyle(percentStyle);
+                                    } else {
+                                        nowCell.setCellStyle(defaultStyle);
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
 
-                    Cell nowRowCell3 = nowRow.getCell(2);
-                    nowRowCell3.setCellValue(openList.get(i));
-                    nowRowCell3.setCellStyle(dotTwoStyle);
+                        exist = true;
 
-                    Cell nowRowCell4 = nowRow.getCell(3);
-                    nowRowCell4.setCellValue(highList.get(i));
-                    nowRowCell4.setCellStyle(dotTwoStyle);
-
-                    Cell nowRowCell5 = nowRow.getCell(4);
-                    nowRowCell5.setCellValue(lowList.get(i));
-                    nowRowCell5.setCellStyle(dotTwoStyle);
-
-                    Cell nowRowCell6 = nowRow.getCell(5);
-                    nowRowCell6.setCellValue(closeList.get(i));
-                    nowRowCell6.setCellStyle(dotTwoStyle);
-
-                    Cell nowRowCell7 = nowRow.getCell(6);
-                    nowRowCell7.setCellValue(volumeList.get(i));
-                    nowRowCell7.setCellStyle(cashStyle);
-
-                    Cell nowRowCell8 = nowRow.getCell(7);
-
-                    if (i != 0) {
-                        Double yesterDayClose = closeList.get(i - 1);
-                        Double todayClose = closeList.get(i);
-                        Double change = (todayClose - yesterDayClose) / yesterDayClose;
-                        nowRowCell8.setCellValue(change);
-                        nowRowCell8.setCellStyle(percentStyle);
                     }
+                }
+                if (!exist) {
+                    Row nowRow = selectedSheet.createRow(additionalRowStart);
+                    nowRow.setHeightInPoints((short) 21);
+                    additionalRowStart = additionalRowStart + 1;
+                    for (int cell = 0; cell < 8; cell++) {
+                        Cell nowCell = nowRow.createCell(cell);
+                        if (cell == 1) {
+                            nowCell.setCellValue(day);
+                            nowCell.setCellStyle(dayStyle);
+                        } else {
+                            nowCell.setCellStyle(defaultStyle);
+                        }
+                    }
+                }
+                //  배당데이터
+                if (dividendsMap != null && dividendsMap.get(targetDate) != null) {
+                    Row nowRow = selectedSheet.createRow(additionalRowStart);
+                    nowRow.setHeightInPoints((short) 21);
+                    additionalRowStart = additionalRowStart + 1;
+                    for (int cell = 0; cell < 8; cell++) {
+                        Cell nowCell = nowRow.createCell(cell);
+                        if (cell == 1) {
+                            nowCell.setCellValue(day);
+                            nowCell.setCellStyle(dividendAndSplitDayStyle);
+                        } else if (cell == 2) {
+                            nowCell.setCellValue(String.format("%.2f", dividendsMap.get(targetDate).getAmount()) + " Dividend");
+                            nowCell.setCellStyle(dividendAndSplitDateStyle);
+                        } else {
+                            nowCell.setCellStyle(dividendAndSplitDateStyle);
+                        }
+                    }
+
+                    // 병합할 셀 범위 지정
+                    CellRangeAddress region = new CellRangeAddress(
+                            additionalRowStart - 1, // firstRow
+                            additionalRowStart - 1, // lastRow
+                            2, // firstCol
+                            7 // lastCol
+                    );
+                    selectedSheet.addMergedRegion(region);
+                }
+                // 분할 데이터
+                if (splitsMap != null && splitsMap.get(targetDate) != null) {
+                    Row nowRow = selectedSheet.createRow(additionalRowStart);
+                    nowRow.setHeightInPoints((short) 21);
+                    additionalRowStart = additionalRowStart + 1;
+                    for (int cell = 0; cell < 8; cell++) {
+                        Cell nowCell = nowRow.createCell(cell);
+                        if (cell == 1) {
+                            nowCell.setCellValue(day);
+                            nowCell.setCellStyle(dividendAndSplitDayStyle);
+                        } else if (cell == 2) {
+                            nowCell.setCellValue(splitsMap.get(targetDate).getSplitRatio() + " Stock Split");
+                            nowCell.setCellStyle(dividendAndSplitDateStyle);
+                        } else {
+                            nowCell.setCellStyle(dividendAndSplitDateStyle);
+                        }
+                    }
+
+                    // 병합할 셀 범위 지정
+                    CellRangeAddress region = new CellRangeAddress(
+                            additionalRowStart - 1, // firstRow
+                            additionalRowStart - 1, // lastRow
+                            2, // firstCol
+                            7 // lastCol
+                    );
+                    selectedSheet.addMergedRegion(region);
                 }
             }
         }
@@ -722,8 +836,10 @@ public class FinanceService {
                     Row nowRow = loadSheet.createRow(loadSheet.getLastRowNum() + 1);
                     nowRow.setHeightInPoints((short) 22);
                     Cell cell1 = nowRow.createCell(0);
-                    cell1.setCellValue(tradeDate.format(DateTimeFormatter.ISO_DATE));
-                    cell1.setCellStyle(defaultFontStyle);// TODO 일자 출력 format 미설정
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy");
+                    Date tempSimpleDateDate = Date.valueOf(tradeDate);
+                    cell1.setCellValue(dateFormat.format(tempSimpleDateDate));
+                    cell1.setCellStyle(defaultFontStyle);
 
                     Cell cell2 = nowRow.createCell(1);
                     cell2.setCellValue(openList.get(i));
@@ -768,5 +884,29 @@ public class FinanceService {
             log.error("티커의 이름을 가져오는데 오류가 발생했습니다.");
             throw new RuntimeException("티커의 이름을 가져오는데 오류가 발생했습니다.");
         }
+    }
+
+    private Integer getMonthOfAbbreviation(String abbreviation) {
+        Integer month = 0;
+        switch (abbreviation) {
+            case "DEC" : month = 12; break;
+            case "NOV" : month = 11; break;
+            case "OCT" : month = 10; break;
+            case "SEP" : month = 9; break;
+            case "AUG" : month = 8; break;
+            case "JUL" : month = 7; break;
+            case "JUN" : month = 6; break;
+            case "MAY" : month = 5; break;
+            case "APR" : month = 4; break;
+            case "MAR" : month = 3; break;
+            case "FEB" : month = 2; break;
+            case "JAN" : month = 1; break;
+            default:month = 0; break;
+        }
+        if (month == 0) {
+            log.error("잘못된 월을 가지고 있는 데이터가 포함되어 있습니다.");
+            throw new RuntimeException("잘못된 월을 가지고 있는 데이터가 포함되어 있습니다.");
+        }
+        return month;
     }
 }
