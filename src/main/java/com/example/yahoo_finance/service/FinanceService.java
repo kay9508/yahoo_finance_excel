@@ -145,7 +145,7 @@ public class FinanceService {
         Iterator<Map.Entry<LocalDate, DividendsDTO>> dividendsIterator = dividendsMap.entrySet().iterator();
         while (dividendsIterator.hasNext()) {
             Map.Entry<LocalDate, DividendsDTO> entry = dividendsIterator.next();
-            System.out.println(entry.getKey() + " : " + entry.getValue());
+//            System.out.println(entry.getKey() + " : " + entry.getValue());
         }
 
         LinkedHashMap<LocalDate, SplitsDTO> splitsMap = null;
@@ -161,7 +161,7 @@ public class FinanceService {
         Iterator<Map.Entry<LocalDate, SplitsDTO>> splitsIterator = splitsMap.entrySet().iterator();
         while (splitsIterator.hasNext()) {
             Map.Entry<LocalDate, SplitsDTO> entry = splitsIterator.next();
-            System.out.println(entry.getKey() + " : " + entry.getValue().getSplitRatio());
+//            System.out.println(entry.getKey() + " : " + entry.getValue().getSplitRatio());
         }
 
         // 엑셀 파일 생성
@@ -344,6 +344,7 @@ public class FinanceService {
                 row2Cell8.setCellValue("CHANGE");
                 row2Cell8.setCellStyle(row2Cell2to8Style);
 
+                //TODO 이거 이러면 답도 없을거 같고 시트를 먼저 생성한 다음에 정리된 시트 네임으로 정리된 linkedHashMap으로 (일별데이터 분할,배당 데이터 있는) 시트 채워넣는 방식으로 해야할듯
                 for (int day = 2; day < 33; day++) {
                     Row nowRow = sheet.createRow(day);
                     // 행 높이 설정
@@ -355,23 +356,6 @@ public class FinanceService {
                         if (colum != 1) {
                             Cell nowCell = nowRow.createCell(colum);
                             nowCell.setCellStyle(defaultStyle);
-                        }
-                    }
-                }
-                //TODO 여기부분 작업중
-                for (LocalDate divideDate : dividendsMap.keySet()) {
-                    if (tradeDate.getYear() == divideDate.getYear() && tradeDate.getMonth() == divideDate.getMonth()) {
-                        Integer allRow = sheet.getPhysicalNumberOfRows();
-                        for (int rownum = 2; rownum < allRow; rownum++) {
-                            Double test1 = 30.0;
-                            Integer test = 30;
-                            if (test.equals(test1)) {
-                                System.out.println("test");
-                            }
-                            Integer cellDate = Integer.valueOf(String.valueOf(sheet.getRow(rownum).getCell(1).getNumericCellValue()));
-                            if (cellDate.equals(divideDate.getDayOfMonth())) {
-                                sheet.createRow(rownum); //이렇게 했을때 row가 하위에 추가되는지 확인
-                            }
                         }
                     }
                 }
@@ -415,11 +399,11 @@ public class FinanceService {
             }
         }
 
+        //시트 채우기
         for (Integer i = totalCount - 1; i >= 0; i--) {
             LocalDate tradeDate = Instant.ofEpochSecond(timestampList.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
             String sheetName = String.valueOf(tradeDate.getMonth()).substring(0, 3) + " " + String.valueOf(tradeDate.getYear()).substring(2, 4);
 
-            // 시트내용 채우기
             XSSFSheet selectedSheet = sheetMap.get(sheetName);
             Row nowRow = null;
             for (int j = 1; j < 32; j++) {
@@ -466,7 +450,6 @@ public class FinanceService {
                     }
                 }
             }
-
         }
 
         log.info("일별데이서 생성 완료");
