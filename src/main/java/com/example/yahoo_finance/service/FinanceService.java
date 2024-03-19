@@ -44,7 +44,6 @@ public class FinanceService {
         String companyFullName = getCompanyFullName(financeInfo);
         PeriodDTO periodSetting = getPeriods(financeInfo);
         String dayDataUrl = getRequestedUrl(financeInfo.getTicker(), periodSetting, "1d");
-        String monthDataUrl = getRequestedUrl(financeInfo.getTicker(), periodSetting, "1mo");
         String nbiUrl = getRequestedUrl("^NBI", periodSetting, "1d");
 
         String nbiResponse = "";
@@ -110,10 +109,15 @@ public class FinanceService {
             e.printStackTrace();
         }
 
+        log.info("첫 거래일 : " + Instant.ofEpochSecond(dayDataResultDTO.getMeta().getFirstTradeDate()).atZone(ZoneId.systemDefault()).toLocalDate());
         /*LocalDate firstTradeDate = Instant.ofEpochSecond(dayDataResultDTO.getMeta().getFirstTradeDate()).atZone(ZoneId.systemDefault()).toLocalDate();
         if (!firstTradeDate.equals(financeInfo.getStartDate())) {
             log.warn("(!주의!)첫 거래일이 입력된 일자와 다릅니다.");
         }*/
+
+        //TODO 최초 거래일이 이상하게 나오는 종목이 뭐 하나 있었는데 확인해야함
+        periodSetting.setStartPeriodString(dayDataResultDTO.getMeta().getFirstTradeDate().toString());
+        String monthDataUrl = getRequestedUrl(financeInfo.getTicker(), periodSetting, "1mo");
 
         XSSFWorkbook makedExcel = excelCreateAndSetDayData(dayDataResultDTO, financeInfo.getShotTag(), financeInfo.getKoreaName(), nbiMap);
         XSSFWorkbook addedExcel = setMonthData(makedExcel, monthDataUrl, companyFullName, financeInfo.getTicker());
@@ -614,7 +618,7 @@ public class FinanceService {
             Timestamp endPeriod = Timestamp.valueOf(financeInfo.getEndDate().atTime(0, 0, 0));
             periodDTO.setEndPeriodString(String.valueOf(endPeriod.getTime()).substring(0,10));
         } else {
-            Timestamp endPeriod = Timestamp.valueOf(LocalDate.now().atTime(0, 0, 0));
+            Timestamp endPeriod = Timestamp.valueOf(LocalDate.now().minusDays(1).atTime(0, 0, 0));
             periodDTO.setEndPeriodString(String.valueOf(endPeriod.getTime()).substring(0,10));
         }
         return periodDTO;
@@ -701,7 +705,6 @@ public class FinanceService {
             LinkedHashMap resultMap = (LinkedHashMap) resultList.get(0);
 
             monthDataResultDTO = objectMapper.convertValue(resultMap, ApiResultDTO.class);
-            log.info("monthDataResultDTO : {}", monthDataResultDTO);
         } catch (Exception e) {
             log.error("월별 DTO변환 도중 에러가 발생했습니다.");
             e.printStackTrace();
