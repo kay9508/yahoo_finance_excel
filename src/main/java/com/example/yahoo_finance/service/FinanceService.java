@@ -125,31 +125,31 @@ public class FinanceService {
         return addedExcel;
     }
 
-    private XSSFWorkbook excelCreateAndSetDayData(ApiResultDTO resultDTO, String shotTag, String koreaName, LinkedHashMap<LocalDate, Double> nbiMap) {
+    private XSSFWorkbook excelCreateAndSetDayData(ApiResultDTO dayDataResultDTO, String shotTag, String koreaName, LinkedHashMap<LocalDate, Double> nbiMap) {
         shotTag = shotTag == null ? "" : shotTag;
         koreaName = koreaName == null ? "" : koreaName;
 
-        List<Double> closeList = resultDTO.getIndicators().getQuote().get(0).getClose();
-        List<Integer> volumeList = resultDTO.getIndicators().getQuote().get(0).getVolume();
-        List<Double> openList = resultDTO.getIndicators().getQuote().get(0).getOpen();
-        List<Double> lowList = resultDTO.getIndicators().getQuote().get(0).getLow();
-        List<Double> highList = resultDTO.getIndicators().getQuote().get(0).getHigh();
+        List<Double> closeList = dayDataResultDTO.getIndicators().getQuote().get(0).getClose();
+        List<Integer> volumeList = dayDataResultDTO.getIndicators().getQuote().get(0).getVolume();
+        List<Double> openList = dayDataResultDTO.getIndicators().getQuote().get(0).getOpen();
+        List<Double> lowList = dayDataResultDTO.getIndicators().getQuote().get(0).getLow();
+        List<Double> highList = dayDataResultDTO.getIndicators().getQuote().get(0).getHigh();
 
         LinkedHashMap<LocalDate, DividendsDTO> dividendsMap = null;
-        if (resultDTO.getEvents() != null && resultDTO.getEvents().getDividends() != null) {
+        if (dayDataResultDTO.getEvents() != null && dayDataResultDTO.getEvents().getDividends() != null) {
             dividendsMap = new LinkedHashMap<>();
-            for (String s : resultDTO.getEvents().getDividends().keySet()) {
-                LocalDate date = Instant.ofEpochSecond(resultDTO.getEvents().getDividends().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
-                dividendsMap.put(date, resultDTO.getEvents().getDividends().get(s));
+            for (String s : dayDataResultDTO.getEvents().getDividends().keySet()) {
+                LocalDate date = Instant.ofEpochSecond(dayDataResultDTO.getEvents().getDividends().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
+                dividendsMap.put(date, dayDataResultDTO.getEvents().getDividends().get(s));
             }
         }
 
         LinkedHashMap<LocalDate, SplitsDTO> splitsMap = null;
-        if (resultDTO.getEvents() != null && resultDTO.getEvents().getSplits() != null) {
+        if (dayDataResultDTO.getEvents() != null && dayDataResultDTO.getEvents().getSplits() != null) {
             splitsMap = new LinkedHashMap<>();
-            for (String s : resultDTO.getEvents().getSplits().keySet()) {
-                LocalDate date = Instant.ofEpochSecond(resultDTO.getEvents().getSplits().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
-                splitsMap.put(date, resultDTO.getEvents().getSplits().get(s));
+            for (String s : dayDataResultDTO.getEvents().getSplits().keySet()) {
+                LocalDate date = Instant.ofEpochSecond(dayDataResultDTO.getEvents().getSplits().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
+                splitsMap.put(date, dayDataResultDTO.getEvents().getSplits().get(s));
             }
         }
 
@@ -286,8 +286,8 @@ public class FinanceService {
         LinkedHashMap<String, List<RowDataDTO>> sheetData = new LinkedHashMap<>();
         LinkedHashMap<String, XSSFSheet> sheetMap = new LinkedHashMap<>();
 
-        List<Integer> timestampList = resultDTO.getTimestamp();
-        Integer totalCount = resultDTO.getTimestamp().size();
+        List<Integer> timestampList = dayDataResultDTO.getTimestamp();
+        Integer totalCount = dayDataResultDTO.getTimestamp().size();
         for (Integer i = totalCount - 1; i >= 0; i--) {
             LocalDate tradeDate = Instant.ofEpochSecond(timestampList.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
             String sheetName = String.valueOf(tradeDate.getMonth()).substring(0,3) + " " + String.valueOf(tradeDate.getYear()).substring(2,4);
@@ -318,7 +318,7 @@ public class FinanceService {
                 row1.setHeightInPoints((short) 40);
                 Cell row1Cell1 = row1.createCell(0);
                 Cell row1Cell7 = row1.createCell(7);
-                row1Cell1.setCellValue("(" + shotTag + ") " + resultDTO.getMeta().getSymbol() + " (" + koreaName + ")");
+                row1Cell1.setCellValue("(" + shotTag + ") " + dayDataResultDTO.getMeta().getSymbol() + " (" + koreaName + ")");
                 row1Cell1.setCellStyle(row1Cell1Style);
                 row1Cell7.setCellValue(String.valueOf(tradeDate.getMonth()).substring(0,3) + "/" + String.valueOf(tradeDate.getYear()).substring(2,4));
                 row1Cell7.setCellStyle(row1Cell8Style);
@@ -682,6 +682,18 @@ public class FinanceService {
         dotTwoStyle.setFont(defaultFont);
         dotTwoStyle.setAlignment(HorizontalAlignment.RIGHT);
 
+        // 분할 배당 data부분에 사용할 스타일
+        CellStyle dividendAndSplitDateStyle = finalExcel.createCellStyle();
+        dividendAndSplitDateStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("0.00"));
+        dividendAndSplitDateStyle.setFont(defaultFont);
+        dividendAndSplitDateStyle.setBorderTop(BorderStyle.THIN);
+        dividendAndSplitDateStyle.setBorderLeft(BorderStyle.THIN);
+        dividendAndSplitDateStyle.setBorderRight(BorderStyle.THIN);
+        dividendAndSplitDateStyle.setBorderBottom(BorderStyle.THIN);
+        dividendAndSplitDateStyle.setAlignment(HorizontalAlignment.CENTER);
+        dividendAndSplitDateStyle.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+        dividendAndSplitDateStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
         String monthDataResponse = "";
         try {
             monthDataResponse = webClient.get()
@@ -714,6 +726,24 @@ public class FinanceService {
         List<Double> openList = monthDataResultDTO.getIndicators().getQuote().get(0).getOpen();
         List<Double> lowList = monthDataResultDTO.getIndicators().getQuote().get(0).getLow();
         List<Double> highList = monthDataResultDTO.getIndicators().getQuote().get(0).getHigh();
+
+        LinkedHashMap<LocalDate, DividendsDTO> dividendsMap = null;
+        if (monthDataResultDTO.getEvents() != null && monthDataResultDTO.getEvents().getDividends() != null) {
+            dividendsMap = new LinkedHashMap<>();
+            for (String s : monthDataResultDTO.getEvents().getDividends().keySet()) {
+                LocalDate date = Instant.ofEpochSecond(monthDataResultDTO.getEvents().getDividends().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
+                dividendsMap.put(date, monthDataResultDTO.getEvents().getDividends().get(s));
+            }
+        }
+
+        LinkedHashMap<LocalDate, SplitsDTO> splitsMap = null;
+        if (monthDataResultDTO.getEvents() != null && monthDataResultDTO.getEvents().getSplits() != null) {
+            splitsMap = new LinkedHashMap<>();
+            for (String s : monthDataResultDTO.getEvents().getSplits().keySet()) {
+                LocalDate date = Instant.ofEpochSecond(monthDataResultDTO.getEvents().getSplits().get(s).getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
+                splitsMap.put(date, monthDataResultDTO.getEvents().getSplits().get(s));
+            }
+        }
 
         LinkedHashMap<String, XSSFSheet> sheetMap = new LinkedHashMap<>();
 
@@ -835,6 +865,29 @@ public class FinanceService {
             for (String sheetName : sheetMap.keySet()) {
                 if (sheetName.contains(tradeYearString)) {
                     XSSFSheet loadSheet = sheetMap.get(sheetName);
+
+                    /*if (splitsMap != null) {
+                        for (LocalDate splitDate : splitsMap.keySet()) {
+                            if (tradeDate.getYear() == splitDate.getYear() && tradeDate.getMonth() == splitDate.getMonth()) {
+                                Row nowRow = loadSheet.createRow(loadSheet.getLastRowNum() + 1);
+                                Cell cell1 = nowRow.createCell(0);
+                                Cell cell2 = nowRow.createCell(1);
+                                Cell cell3 = nowRow.createCell(2);
+                                Cell cell4 = nowRow.createCell(3);
+                                Cell cell5 = nowRow.createCell(4);
+                                Cell cell6 = nowRow.createCell(5);
+                                cell1.setCellValue(splitsMap.get(splitDate).getSplitRatio() + " Stock Split");
+                                // 병합할 셀 범위 지정
+                                CellRangeAddress region = new CellRangeAddress(
+                                        additionalRowStart - 1, // firstRow
+                                        additionalRowStart - 1, // lastRow
+                                        0, // firstCol
+                                         // lastCol
+                                );
+                                selectedSheet.addMergedRegion(region);
+                            }
+                        }
+                    }*/
 
                     Row nowRow = loadSheet.createRow(loadSheet.getLastRowNum() + 1);
                     nowRow.setHeightInPoints((short) 22);
