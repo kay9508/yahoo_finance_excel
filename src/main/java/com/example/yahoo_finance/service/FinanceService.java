@@ -513,8 +513,9 @@ public class FinanceService {
                         }
                     }
                 }
-                //  배당데이터
-                if (dividendsMap != null && dividendsMap.get(targetDate) != null) {
+
+                // 분할 데이터
+                if (splitsMap != null && splitsMap.get(targetDate) != null) {
                     Row nowRow = selectedSheet.createRow(additionalRowStart);
                     nowRow.setHeightInPoints((short) 21);
                     additionalRowStart = additionalRowStart + 1;
@@ -524,7 +525,7 @@ public class FinanceService {
                             nowCell.setCellValue(day);
                             nowCell.setCellStyle(dividendAndSplitDayStyle);
                         } else if (cell == 2) {
-                            nowCell.setCellValue(String.format("%.2f", dividendsMap.get(targetDate).getAmount()) + " Dividend");
+                            nowCell.setCellValue(splitsMap.get(targetDate).getSplitRatio() + " Stock Split");
                             nowCell.setCellStyle(dividendAndSplitDateStyle);
                         } else {
                             nowCell.setCellStyle(dividendAndSplitDateStyle);
@@ -540,8 +541,9 @@ public class FinanceService {
                     );
                     selectedSheet.addMergedRegion(region);
                 }
-                // 분할 데이터
-                if (splitsMap != null && splitsMap.get(targetDate) != null) {
+
+                //  배당데이터
+                if (dividendsMap != null && dividendsMap.get(targetDate) != null) {
                     Row nowRow = selectedSheet.createRow(additionalRowStart);
                     nowRow.setHeightInPoints((short) 21);
                     additionalRowStart = additionalRowStart + 1;
@@ -551,7 +553,7 @@ public class FinanceService {
                             nowCell.setCellValue(day);
                             nowCell.setCellStyle(dividendAndSplitDayStyle);
                         } else if (cell == 2) {
-                            nowCell.setCellValue(splitsMap.get(targetDate).getSplitRatio() + " Stock Split");
+                            nowCell.setCellValue(String.format("%.2f", dividendsMap.get(targetDate).getAmount()) + " Dividend");
                             nowCell.setCellStyle(dividendAndSplitDateStyle);
                         } else {
                             nowCell.setCellStyle(dividendAndSplitDateStyle);
@@ -682,17 +684,19 @@ public class FinanceService {
         dotTwoStyle.setFont(defaultFont);
         dotTwoStyle.setAlignment(HorizontalAlignment.RIGHT);
 
-        // 분할 배당 data부분에 사용할 스타일
+        // 분할 배당 날짜 부분에 사용할 스타일
         CellStyle dividendAndSplitDateStyle = finalExcel.createCellStyle();
-        dividendAndSplitDateStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("0.00"));
         dividendAndSplitDateStyle.setFont(defaultFont);
-        dividendAndSplitDateStyle.setBorderTop(BorderStyle.THIN);
-        dividendAndSplitDateStyle.setBorderLeft(BorderStyle.THIN);
-        dividendAndSplitDateStyle.setBorderRight(BorderStyle.THIN);
-        dividendAndSplitDateStyle.setBorderBottom(BorderStyle.THIN);
-        dividendAndSplitDateStyle.setAlignment(HorizontalAlignment.CENTER);
+        dividendAndSplitDateStyle.setAlignment(HorizontalAlignment.RIGHT);
         dividendAndSplitDateStyle.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
         dividendAndSplitDateStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // 분할 배당 데이터 부분에 사용할 스타일
+        CellStyle dividendAndSplitDataStyle = finalExcel.createCellStyle();
+        dividendAndSplitDataStyle.setFont(defaultFont);
+        dividendAndSplitDataStyle.setAlignment(HorizontalAlignment.CENTER);
+        dividendAndSplitDataStyle.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+        dividendAndSplitDataStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
         String monthDataResponse = "";
         try {
@@ -865,34 +869,72 @@ public class FinanceService {
             for (String sheetName : sheetMap.keySet()) {
                 if (sheetName.contains(tradeYearString)) {
                     XSSFSheet loadSheet = sheetMap.get(sheetName);
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy");
 
-                    /*if (splitsMap != null) {
+                    // 분할 데이터
+                    if (splitsMap != null) {
                         for (LocalDate splitDate : splitsMap.keySet()) {
                             if (tradeDate.getYear() == splitDate.getYear() && tradeDate.getMonth() == splitDate.getMonth()) {
                                 Row nowRow = loadSheet.createRow(loadSheet.getLastRowNum() + 1);
                                 Cell cell1 = nowRow.createCell(0);
+                                Date tempSimpleDateDate = Date.valueOf(splitDate);
+                                cell1.setCellValue(dateFormat.format(tempSimpleDateDate));
+                                cell1.setCellStyle(dividendAndSplitDateStyle);
+
                                 Cell cell2 = nowRow.createCell(1);
+                                cell2.setCellValue(splitsMap.get(splitDate).getSplitRatio() + " Stock Split");
+                                cell2.setCellStyle(dividendAndSplitDataStyle);
+
                                 Cell cell3 = nowRow.createCell(2);
                                 Cell cell4 = nowRow.createCell(3);
                                 Cell cell5 = nowRow.createCell(4);
                                 Cell cell6 = nowRow.createCell(5);
-                                cell1.setCellValue(splitsMap.get(splitDate).getSplitRatio() + " Stock Split");
                                 // 병합할 셀 범위 지정
                                 CellRangeAddress region = new CellRangeAddress(
-                                        additionalRowStart - 1, // firstRow
-                                        additionalRowStart - 1, // lastRow
-                                        0, // firstCol
-                                         // lastCol
+                                        loadSheet.getLastRowNum(), // firstRow
+                                        loadSheet.getLastRowNum(), // lastRow
+                                        1, // firstCol
+                                        5// lastCol
                                 );
-                                selectedSheet.addMergedRegion(region);
+                                loadSheet.addMergedRegion(region);
                             }
                         }
-                    }*/
+                    }
+
+                    // 배당 데이터
+                    if (dividendsMap != null) {
+                        for (LocalDate dividendsDate : dividendsMap.keySet()) {
+                            if (tradeDate.getYear() == dividendsDate.getYear() && tradeDate.getMonth() == dividendsDate.getMonth()) {
+                                Row nowRow = loadSheet.createRow(loadSheet.getLastRowNum() + 1);
+                                Cell cell1 = nowRow.createCell(0);
+                                Date tempSimpleDateDate = Date.valueOf(dividendsDate);
+                                cell1.setCellValue(dateFormat.format(tempSimpleDateDate));
+                                cell1.setCellStyle(dividendAndSplitDateStyle);
+
+                                Cell cell2 = nowRow.createCell(1);
+                                cell2.setCellValue(String.format("%.2f", dividendsMap.get(dividendsDate).getAmount()) + " Dividend");
+                                cell2.setCellStyle(dividendAndSplitDataStyle);
+
+                                Cell cell3 = nowRow.createCell(2);
+                                Cell cell4 = nowRow.createCell(3);
+                                Cell cell5 = nowRow.createCell(4);
+                                Cell cell6 = nowRow.createCell(5);
+                                // 병합할 셀 범위 지정
+                                CellRangeAddress region = new CellRangeAddress(
+                                        loadSheet.getLastRowNum(), // firstRow
+                                        loadSheet.getLastRowNum(), // lastRow
+                                        1, // firstCol
+                                        5// lastCol
+                                );
+                                loadSheet.addMergedRegion(region);
+                            }
+                        }
+                    }
 
                     Row nowRow = loadSheet.createRow(loadSheet.getLastRowNum() + 1);
                     nowRow.setHeightInPoints((short) 22);
                     Cell cell1 = nowRow.createCell(0);
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy");
+
                     Date tempSimpleDateDate = Date.valueOf(tradeDate);
                     cell1.setCellValue(dateFormat.format(tempSimpleDateDate));
                     cell1.setCellStyle(defaultFontStyle);
@@ -934,7 +976,7 @@ public class FinanceService {
             Integer start = response.indexOf("<h1 class=\"D(ib) Fz(18px)\"");
             Integer end = response.indexOf("</h1>");
             String temp = response.substring(start, end);
-            String fullName = temp.substring(temp.indexOf(">")+1, temp.length()-7);
+            String fullName = temp.substring(temp.indexOf(">")+1, temp.length()-6);
             return fullName;
         } catch (Exception e) {
             log.error("티커의 이름을 가져오는데 오류가 발생했습니다.");
